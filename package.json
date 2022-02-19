@@ -1,0 +1,28 @@
+{
+  "name": "students",
+  "version": "1.0.0",
+  "description": "Student group queues and notes application",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/m-dzianishchyts/students.git"
+  },
+  "keywords": [
+    "student",
+    "bsuir",
+    "university"
+  ],
+  "author": "Mikhail Dzianishchyts",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/m-dzianishchyts/students/issues"
+  },
+  "homepage": "https://github.com/m-dzianishchyts/students#readme",
+  "dependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
