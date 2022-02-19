@@ -1,12 +1,10 @@
 const express = require("express");
-
-const serverHost = "localhost";
-const serverPort = 8080;
+const config = require("./config")
 
 const app = express();
 
-app.listen(serverPort, serverHost, () => {
-	console.log(`Server started listening on ${serverHost}:${serverPort}`);
+app.listen(config.port, () => {
+	console.log(`Server started listening on port ${config.port}`);
 })
 
 app.get("/", (request, response) => {
