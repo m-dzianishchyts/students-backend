@@ -3,22 +3,37 @@ const config = require("./config")
 
 const app = express();
 
+app.set("view engine", "ejs");
+
 app.listen(config.port, () => {
 	console.log(`Server started listening on port ${config.port}`);
 })
 
 app.get("/", (request, response) => {
-	response.sendFile("views/welcome.html", { root: __dirname });
+	response.render("overview", {
+		title: "Student Group Queues & Notes"
+	});
 })
 
-app.get("/welcome", (request, response) => {
-	response.sendFile("views/welcome.html", { root: __dirname });
+app.get("/overview", (request, response) => {
+	response.render("overview", {
+		title: "Student Group Queues & Notes"
+	});
 })
 
-app.get("/about", (request, response) => {
-	response.sendFile("views/about.html", { root: __dirname });
+app.get("/contacts", (request, response) => {
+	response.render("contacts", {
+		title: "Contacts",
+		contactOptions: [
+			{ name: "GitHub", url: "https://github.com/m-dzianishchyts/students" },
+			{ name: "Email", url: "mailto:mikhail.dzianishchyts@gmail.com" },
+			{ name: "LinkedIn", url: "https://www.linkedin.com/in/mikhail-dzianishchyts/" },
+		]
+	});
 })
 
 app.use((request, response) => {
-	response.status(404).sendFile("views/error404.html", { root: __dirname });
+	response.status(404).render("error404", {
+		title: "Error"
+	});
 });
