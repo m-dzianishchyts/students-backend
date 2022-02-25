@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+	<%- include("partials/head.ejs") %>
+
+	<body>
+		<%- include("partials/navigation.ejs") %>
+
+		<h1><%= queueTitle %> queue</h1>
+		<% if (queueMembers.length == 0) { %>
+		<p>Queue is empty.</p>
+		<% } else { %>
+		<table>
+			<thead>
+				<tr>
+					<th>ID / Position</th>
+					<th>Name</th>
+					<th>Ready</th>
+					<th>Online</th>
+				</tr>
+			</thead>
+			<tbody>
+				<% queueMembers.forEach(member => { %>
+				<tr>
+					<td><%= `${member.position} ${member.id}` %></td>
+					<td><%= member.name %></td>
+					<td><%= member.isReady %></td>
+					<td><%= member.isOnline %></td>
+				</tr>
+				<% }) %>
+			</tbody>
+		</table>
+		<% } %>
+	</body>
+</html>

@@ -35,6 +35,19 @@ app.get("/contacts", (request, response) => {
 	});
 });
 
+app.get("/queue", (request, response) => {
+	let queueMembers = [];
+	for (let i = 1; i <= 20; i++) {
+		let queueMember = { id: i, name: "Person " + i, position: i, isReady: true, isOnline: false };
+		queueMembers.push(queueMember);
+	}
+	response.render("queue", {
+		title: "Queue",
+		queueTitle: "Common",
+		queueMembers: queueMembers,
+	});
+});
+
 app.use((request, response) => {
 	response.status(404).render("error404", {
 		title: "Error",
