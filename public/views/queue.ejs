@@ -13,7 +13,8 @@
 						<p class="title__subheader">The order of presentation</p>
 					</div>
 					<div class="queue__container">
-						<div class="queue">
+						<% if (members.length) { %>
+							<div class="queue">
 							<div class="queue__menu--top menu">
 								<div class="menu__container">
 									<form method="get" id="shuffle-shift">
@@ -41,41 +42,19 @@
 										</tr>
 									</thead>
 									<tbody class="table__body">
-										<tr class="table__row">
-											<td class="table__td table__cell">1</td>
-											<td class="table__td table__cell">Person A</td>
-											<td class="table__td table__cell">
-												<input name="status1" type="checkbox" name="status">
-											</td>
-										</tr>
-										<tr class="table__row">
-											<td class="table__td table__cell">2</td>
-											<td class="table__td table__cell">Person B</td>
-											<td class="table__td table__cell">
-												<input name="status2" type="checkbox" name="status">
-											</td>
-										</tr>
-										<tr class="table__row">
-											<td class="table__td table__cell">3</td>
-											<td class="table__td table__cell">Person C</td>
-											<td class="table__td table__cell">
-												<input name="status3" type="checkbox" name="status">
-											</td>
-										</tr>
-										<tr class="table__row">
-											<td class="table__td table__cell">4</td>
-											<td class="table__td table__cell">Person D</td>
-											<td class="table__td table__cell">
-												<input name="status4" type="checkbox" name="status">
-											</td>
-										</tr>
-										<tr class="table__row">
-											<td class="table__td table__cell">5</td>
-											<td class="table__td table__cell">Person E</td>
-											<td class="table__td table__cell">
-												<input name="status5" type="checkbox" name="status">
-											</td>
-										</tr>
+										<% for (let i = 0; i < members.length; i++) {
+											const member = members[i];
+											const memberPosition = i + 1;
+										%>
+											<tr class="table__row">
+												<td class="table__td table__cell"><%= memberPosition %></td>
+												<td class="table__td table__cell"><%= `${member.name.last} ${member.name.first}` %></td>
+												<td class="table__td table__cell">
+													<input name="status<%= memberPosition %>" type="checkbox" name="status"
+													<%= member.status ? "checked" : "" %>>
+												</td>
+											</tr>
+										<% } %>
 									</tbody>
 								</table>
 								<div class="queue__menu--bottom menu">
@@ -84,8 +63,10 @@
 												class="menu__item queue__shift button">Apply</button>
 									</div>
 								</div>
-							</form>
-						</div>
+						 
+						<% } else { %>
+							<p>The queue has no members yet.</p>
+						<% } %>
 					</div>
 				</main>
 
