@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+	<%- include("./partials/head.ejs", {title: "Archive" }) %>
+
+	<body>
+		<div class="wrapper vh100">
+			<div class="container">
+				<%- include("./partials/header.ejs", {}) %>
+
+				<main class="main">
+					<div class="main__title">
+						<h1 class="title__header">Group archive</h1>
+					</div>
+					<div class="archive">
+						<form method="post" class="archive__form form">
+							<div class="form__file-section">
+								<label for="file-upload" class="form__upload-file-button button">Select files</label>
+								<input type="file" class="form__input-file" id="file-upload" multiple />
+								<ul class="form__files-to-upload" id="files-to-upload"></ul>
+							</div>
+							<button type="submit" class="form__submit-button button">Upload</button>
+						</form>
+						<ul class="archive__container">
+							<div class="archive__item file">
+								<div class="file__info">
+									<div class="file__icon-and-name">
+										<span class="file__icon icon icon-file-empty"></span>
+										<a href="#" class="file__name">Just a file.docx</a>
+									</div>
+									<p class="file__size">15 KB</p>
+								</div>
+								<div class="file__time">04/21/2022 11:22</div>
+							</div>
+						</ul>
+					</div>
+				</main>
+
+				<%- include("./partials/footer.ejs", {}) %>
+			</div>
+		</div>
+		<script src="../js/app.min.js"></script>
+	</body>
+</html>

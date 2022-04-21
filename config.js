@@ -1,7 +1,7 @@
-const dotenv = require('dotenv');
+import dotenv from "dotenv";
 
 dotenv.config();
 
-module.exports = {
+export let config = {
 	port: process.env.PORT
-};
+}
