@@ -1,0 +1,13 @@
+<div class="separator"></div>
+<footer class="footer">
+	<ul class="footer__social">
+		<% for (let i = 0; i < socials.length; i++) {
+			let social=socials[i];
+		%>
+		<a href="<%= social.url %>" target="_blank" class="social__item" tabindex="0">
+			<i class="icon icon-<%= social.name %>"></i>
+		</a>
+		<% } %>
+	</ul>
+	<p class="footer__copyright">Students © 2022</p>
+</footer>
