@@ -13,57 +13,84 @@
 						<p class="title__subheader">The order of presentation</p>
 					</div>
 					<div class="queue__container">
+						<% let members = queue.members; %>
 						<% if (members.length) { %>
 							<div class="queue">
 							<div class="queue__menu--top menu">
 								<div class="menu__container">
-									<form method="get" id="shuffle-shift">
-										<button type="submit" name="action" value="shuffle"
-												class="menu__item queue__shuffle button">Shuffle</button>
-										<button type="submit" name="action" value="shift"
-												class="menu__item queue__shift button">Shift</button>
-									</form>
-									<form method="get" id="new-person">
-										<div class="menu__new-person">
-											<input name="person-name" type="text" class="menu__text-input input">
-											<button name="action" value="add-person"
-													class="menu__add-person-button button">Add</button>
-										</div>
+									<form method="post" id="shuffle-rotate">
+										<input type="hidden" name="queueId" value="<%= queue._id %>" form="shuffle-rotate">
+										<button type="submit" name="action" value="shuffle" class="menu__item queue__shuffle button" form="shuffle-rotate">
+											Shuffle
+										</button>
+										<button type="submit" name="action" value="rotate" class="menu__item queue__rotate button" form="shuffle-rotate">
+											Rotate
+										</button>
 									</form>
 								</div>
 							</div>
-							<form method="get" id="edit">
-								<table class="queue__table table">
-									<thead class="table__head">
+							<% for (let i = 0; i < members.length; i++) {
+								const member = members[i];
+								const memberPosition = i + 1;
+								const formId = `person-${member._id}`;
+							%>
+								<form method="post" id="<%= formId %>">
+									<input type="hidden" name="queueId" value="<%= queue._id %>">
+									<input type="hidden" name="member[id]" value="<%= member._id %>" form="<%= formId %>" />
+									<input type="hidden" name="member[status]" value="<%= member.status %>" form="<%= formId %>" />
+								</form>
+							<% } %>
+							<form method="post" id="new-person">
+								<input type="hidden" name="queueId" value="<%= queue._id %>">
+							</form>
+							<table class="queue__table table">
+								<thead class="table__head">
+									<tr class="table__row">
+										<th class="table__th table__cell">#</th>
+										<th class="table__th table__cell">Name</th>
+										<th class="table__th table__cell">Status</th>
+										<th class="table__th table__cell"></th>
+									</tr>
+								</thead>
+								<tbody class="table__body">
+									<% for (let i = 0; i < members.length; i++) {
+										const member = members[i];
+										const memberPosition = i + 1;
+										const formId = `person-${member._id}`;
+										const statusIconClass = member.status ? "checkmark" : "time";
+									%>
 										<tr class="table__row">
-											<th class="table__th table__cell">#</th>
-											<th class="table__th table__cell">Name</th>
-											<th class="table__th table__cell">Status</th>
+											<td class="table__td table__cell"><%= memberPosition %></td>
+											<td class="table__td table__cell"><%= `${member.name?.last} ${member.name?.first}` %></td>
+											<td class="table__td table__cell">
+												<span class="table__controls">
+													<button type="submit" name="action" value="toggleStatus"
+																	class="queue__status icon icon-<%= statusIconClass %>" form="<%= formId %>"></button>
+												</span>
+											</td>
+											<td class="table__td table__cell">
+												<span class="table__controls">
+													<button type="submit" name="action" value="remove" class="queue__remove icon icon-trash"
+																	form="<%= formId %>"></button>
+												</span>
+											</td>
 										</tr>
-									</thead>
-									<tbody class="table__body">
-										<% for (let i = 0; i < members.length; i++) {
-											const member = members[i];
-											const memberPosition = i + 1;
-										%>
-											<tr class="table__row">
-												<td class="table__td table__cell"><%= memberPosition %></td>
-												<td class="table__td table__cell"><%= `${member.name.last} ${member.name.first}` %></td>
-												<td class="table__td table__cell">
-													<input name="status<%= memberPosition %>" type="checkbox" name="status"
-													<%= member.status ? "checked" : "" %>>
-												</td>
-											</tr>
-										<% } %>
-									</tbody>
-								</table>
-								<div class="queue__menu--bottom menu">
-									<div class="menu__container">
-										<button type="submit" name="action" value="edit"
-												class="menu__item queue__shift button">Apply</button>
-									</div>
-								</div>
-						 
+									<% } %>
+									<tr class="table__row">
+										<td class="table__td table__cell"></td>
+										<td class="table__td table__cell">
+											<span class="queue__single-input">
+												<input type="text" name="personName" class="queue__text-input input" form="new-person" />
+												<button type="submit" name="action" value="add" class="queue__add button" form="new-person">
+													Add
+												</button>
+											</span>
+										</td>
+										<td class="table__td table__cell"></td>
+										<td class="table__td table__cell"></td>
+									</tr>
+								</tbody>
+							</table>
 						<% } else { %>
 							<p>The queue has no members yet.</p>
 						<% } %>

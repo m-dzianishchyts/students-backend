@@ -5,7 +5,8 @@
   "main": "app.js",
   "type": "module",
   "scripts": {
-    "run": "nodemon app.js"
+    "run": "nodemon app.js",
+    "ejslint": "ejslint"
   },
   "repository": {
     "type": "git",
@@ -26,8 +27,19 @@
     "dotenv": "^16.0.0",
     "ejs": "^3.1.6",
     "express": "^4.17.3",
+    "filesize": "^8.0.7",
+    "gridfs-stream": "^1.1.1",
+    "method-override": "^3.0.0",
+    "mime-types": "^2.1.35",
+    "moment": "^2.29.3",
     "mongodb": "^4.5.0",
     "morgan": "^1.10.0",
+    "multer": "^1.4.4",
+    "multer-gridfs-storage": "^5.0.2",
+    "shuffle-array": "^1.0.1"
+  },
+  "devDependencies": {
+    "ejs-lint": "^1.2.1",
     "nodemon": "^2.0.15"
   }
 }
