@@ -27,7 +27,7 @@ app.set('views', pathJoin(pathToPublic, "views"));
 app.use(morgan("dev"));
 
 app.listen(process.env.PORT, () => {
-	console.log(`Server started listening on port ${process.env.PORT}.`);
+    console.log(`Server started listening on port ${process.env.PORT}.`);
 });
 
 app.use(common.findSocials);
@@ -42,7 +42,7 @@ app.post("/queue", queue.update);
 app.get("/archive", archive.show);
 app.get("/archive/:id", archive.download);
 app.delete("/archive/:id", archive.delete({ redirect: "/archive" }));
-app.post("/archive/upload", archive.upload, archive.postUpload({redirect: "/archive"}));
+app.post("/archive/upload", archive.upload, archive.postUpload({ redirect: "/archive" }));
 
 app.use(common.resourceNotFoundError);
 app.use(common.serverError);
