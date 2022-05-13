@@ -5,12 +5,11 @@
     "main": "app.js",
     "type": "module",
     "scripts": {
-        "run": "nodemon app.js",
-        "ejslint": "ejslint"
+        "nodemon": "nodemon app.ts"
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/m-dzianishchyts/students.git"
+        "url": "git+https://github.com/m-dzianishchyts/students-backend.git"
     },
     "keywords": [
         "student",
@@ -20,26 +19,28 @@
     "author": "Mikhail Dzianishchyts",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/m-dzianishchyts/students/issues"
+        "url": "https://github.com/m-dzianishchyts/students-backend/issues"
     },
-    "homepage": "https://github.com/m-dzianishchyts/students#readme",
+    "homepage": "https://github.com/m-dzianishchyts/students-backend#readme",
     "dependencies": {
+        "@types/method-override": "^0.0.32",
+        "@types/morgan": "^1.9.3",
+        "@types/shuffle-array": "^1.0.2",
+        "boolean": "^3.2.0",
         "dotenv": "^16.0.0",
-        "ejs": "^3.1.6",
         "express": "^4.17.3",
-        "filesize": "^8.0.7",
         "gridfs-stream": "^1.1.1",
-        "method-override": "^3.0.0",
-        "mime-types": "^2.1.35",
-        "moment": "^2.29.3",
+        "http-status-codes": "^2.2.0",
         "mongodb": "^4.5.0",
+        "mongoose": "^6.3.3",
         "morgan": "^1.10.0",
         "multer": "^1.4.4",
         "multer-gridfs-storage": "^5.0.2",
-        "shuffle-array": "^1.0.1"
+        "shuffle-array": "^1.0.1",
+        "ts-node": "^10.7.0",
+        "typescript": "^4.8.0-dev.20220511"
     },
     "devDependencies": {
-        "ejs-lint": "^1.2.1",
         "nodemon": "^2.0.15"
     }
 }

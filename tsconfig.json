@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "target": "es2017",
+        "module": "es2022",
+        "sourceMap": true,
+        "esModuleInterop": true,
+        "moduleResolution": "Node",
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "typeRoots": [
+            "./node_modules/@types",
+            "./src/types"
+        ],
+        "strictNullChecks": false,
+        "suppressImplicitAnyIndexErrors": true
+    },
+    "include": [
+        "./*.ts",
+        "src/**/*.ts",
+    ],
+    "exclude": [
+        "node_modules"
+    ],
+}

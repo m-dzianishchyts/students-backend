@@ -1,31 +1,34 @@
 {
-// Use IntelliSense to learn about possible attributes.
-// Hover to view descriptions of existing attributes.
-// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-"version": "0.2.0",
-"configurations": [
-{
-"console": "integratedTerminal",
-"name": "Launch",
-"program": "${workspaceFolder}/app.js",
-"request": "launch",
-"skipFiles": [
-"<node_internals>/**"
-],
-"type": "pwa-node"
-},
-{
-"console": "integratedTerminal",
-"internalConsoleOptions": "neverOpen",
-"name": "Nodemon Launch",
-"program": "${workspaceFolder}/app.js",
-"request": "launch",
-"restart": true,
-"runtimeExecutable": "${workspaceFolder}/node_modules/nodemon/bin/nodemon",
-"skipFiles": [
-"<node_internals>/**"
-],
-"type": "pwa-node",
-},
-]
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "console": "integratedTerminal",
+            "name": "Node Launch",
+            "request": "launch",
+            "runtimeArgs": [
+                "--loader",
+                "ts-node/esm"
+            ],
+            "args": [
+                "${workspaceFolder}/app.ts"
+            ],
+            "type": "node",
+        },
+        {
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "name": "Nodemon Launch",
+            "program": "${workspaceFolder}/app.ts",
+            "request": "launch",
+            "restart": true,
+            "runtimeExecutable": "${workspaceFolder}/node_modules/nodemon/bin/nodemon",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node",
+        },
+    ]
 }
