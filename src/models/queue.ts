@@ -1,9 +1,9 @@
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 
-import database from "../services/database.service.js";
-import { ResourceNotFoundError, WriteResultNotAcknowledgedError } from "../util/errors.js";
 import User from "./user.js";
+import { connection } from "../services/database.service.js";
+import { ResourceNotFoundError, WriteResultNotAcknowledgedError } from "../util/errors.js";
 
 export interface IQueue extends mongoose.Document {
     name: string;
@@ -31,32 +31,40 @@ const memberSchema = new mongoose.Schema<IQueueMember>(
         status: {
             type: Boolean,
             required: true,
-            default: false
+            default: false,
         },
     },
-    { _id: false }
+    {
+        _id: false,
+        versionKey: false,
+    }
 );
 
 const Member = mongoose.model<IQueueMember>("Member", memberSchema);
 
-const queueSchema = new mongoose.Schema<IQueue>({
-    name: {
-        type: String,
-        required: true,
-        maxlength: 255,
-        trim: true,
-    },
-    members: {
-        type: [memberSchema],
-        required: true,
-        validate: {
-            validator: (members: IQueueMember[]) => {
-                return members.length <= 100;
+const queueSchema = new mongoose.Schema<IQueue>(
+    {
+        name: {
+            type: String,
+            required: true,
+            maxlength: 255,
+            trim: true,
+        },
+        members: {
+            type: [memberSchema],
+            required: true,
+            validate: {
+                validator: (members: IQueueMember[]) => {
+                    return members.length <= 100;
+                },
+                message: (props) => `${props.value} exceeds maximum size (100), actual: ${props.value.length}`,
             },
-            message: (props) => `${props.value} exceeds maximum size (100), actual: ${props.value.length}`,
         },
     },
-});
+    {
+        versionKey: false,
+    }
+);
 
 queueSchema.methods.insertMember = async function (id: string): Promise<IQueueMember> {
     const user = await User.findById(id).exec();
@@ -118,6 +126,6 @@ queueSchema.methods.updateName = async function (name: string): Promise<void> {
     await Queue.updateOne(filter, update).exec();
 };
 
-const Queue = database.connection.model<IQueue>("Queue", queueSchema);
+const Queue = connection.model<IQueue>("Queue", queueSchema);
 
 export default Queue;

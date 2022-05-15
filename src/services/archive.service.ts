@@ -4,27 +4,32 @@ import { RequestHandler, NextFunction } from "express";
 import { MulterError } from "multer";
 import { StatusCodes } from "http-status-codes";
 
-import database from "./database.service.js";
 import File from "../models/file.js";
+import { gridFs } from "./database.service.js";
 import { ResourceNotFoundError, ServerError, UserCausedError } from "../util/errors.js";
 
 const filesUploadLimit = 10;
-const upload = multer({ storage: database.gridFs.storage }).array("files", filesUploadLimit);
+const upload = multer({ storage: gridFs.storage }).array("files", filesUploadLimit);
 
 /*
- * GET /files
+ * GET /api/files
  */
 const show: RequestHandler = async (request, response, next) => {
     try {
         const files = await File.find({}).sort({ uploadDate: -1 }).exec();
-        response.json(files);
+        const filesWithType = files.map((file) => {
+            const fileWithType = Object.assign({}, file.toObject());
+            (fileWithType as any).fileType = file.fileType();
+            return fileWithType;
+        });
+        response.json(filesWithType);
     } catch (error) {
         next(error);
     }
 };
 
 /*
- * GET /files/:fileId
+ * GET /api/files/:fileId
  */
 const downloadFile: RequestHandler = async (request, response, next) => {
     try {
@@ -45,8 +50,12 @@ const downloadFile: RequestHandler = async (request, response, next) => {
     }
 };
 
+const preUpload: RequestHandler = (request, response, next) => {
+    next();
+};
+
 /*
- * POST /files
+ * POST /api/files
  */
 const uploadFiles: RequestHandler = (request, response, next) =>
     upload(request, response, ((error: any) => {
@@ -60,7 +69,7 @@ const uploadFiles: RequestHandler = (request, response, next) =>
     }) as NextFunction);
 
 /*
- * POST /files
+ * POST /api/files
  */
 const postUpload: RequestHandler = (request, response, next) => {
     if (!request.files || !(request.files instanceof Array)) {
@@ -73,7 +82,7 @@ const postUpload: RequestHandler = (request, response, next) => {
 };
 
 /*
- * DELETE /files/:fileId
+ * DELETE /api/files/:fileId
  */
 const deleteFile: RequestHandler = async (request, response, next) => {
     try {
@@ -96,6 +105,7 @@ class LimitError extends UserCausedError {
 export default {
     show,
     downloadFile,
+    preUpload,
     uploadFiles,
     postUpload,
     deleteFile,

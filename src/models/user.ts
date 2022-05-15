@@ -1,13 +1,15 @@
 import mongoose from "mongoose";
 
-import database from "../services/database.service.js";
-import { ResourceNotFoundError } from "../util/errors.js";
 import Queue from "./queue.js";
+import { connection } from "../services/database.service.js";
+import { ResourceNotFoundError } from "../util/errors.js";
 
 export interface IUser extends mongoose.Document {
     name: { first: string; last: string };
-    datetimeAdded: Date;
-    datetimeUpdated: Date;
+    email: string;
+    password: Buffer;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface IUserModel extends mongoose.Model<IUser> {
@@ -32,21 +34,27 @@ export const userNameSchema = new mongoose.Schema<{ first: string; last: string 
     },
     {
         _id: false,
-        timestamps: { createdAt: "datetimeAdded", updatedAt: "datetimeUpdated" },
+        versionKey: false,
     }
 );
 
-export const userSchema = new mongoose.Schema<IUser>({
-    name: userNameSchema,
-    datetimeAdded: {
-        type: Date,
-        required: true,
+export const userSchema = new mongoose.Schema<IUser>(
+    {
+        name: userNameSchema,
+        email: {
+            type: String,
+            required: true,
+        },
+        password: {
+            type: Buffer,
+            required: true,
+        },
     },
-    datetimeUpdated: {
-        type: Date,
-        required: true,
-    },
-});
+    {
+        timestamps: true,
+        versionKey: false,
+    }
+);
 
 userSchema.statics.findInQueue = async function (queueId: string): Promise<IUser[]> {
     const queue = await Queue.findById(queueId).exec();
@@ -54,14 +62,14 @@ userSchema.statics.findInQueue = async function (queueId: string): Promise<IUser
         throw new ResourceNotFoundError("Queue was not found");
     }
 
-    const queueMembersIds = queue.members.map(member => member.userId);
+    const queueMembersIds = queue.members.map((member) => member.userId);
     const filter = { _id: { $in: queueMembersIds } };
     const usersFreeOrder = await User.find(filter).exec();
-    const idUserMap = new Map(usersFreeOrder.map(user => [user.id, user]));
-    const users = queueMembersIds.map(id => idUserMap.get(id.toString()));
+    const idUserMap = new Map(usersFreeOrder.map((user) => [user.id, user]));
+    const users = queueMembersIds.map((id) => idUserMap.get(id.toString()));
     return users;
 };
 
-const User = database.connection.model<IUser, IUserModel>("User", userSchema);
+const User = connection.model<IUser, IUserModel>("User", userSchema);
 
 export default User;

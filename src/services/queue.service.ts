@@ -1,14 +1,14 @@
-import { RequestHandler } from "express";
-import { StatusCodes } from "http-status-codes";
 import mongoose from "mongoose";
 import shuffleArray from "shuffle-array";
+import { RequestHandler } from "express";
+import { StatusCodes } from "http-status-codes";
 import { isBooleanable, boolean as toBoolean } from "boolean";
 
 import Queue, { IQueueMember } from "../models/queue.js";
 import { ResourceNotFoundError, UserCausedError } from "../util/errors.js";
 
 /*
- * GET /queues/:id
+ * GET /api/queues/:id
  */
 const show: RequestHandler = async (request, response, next) => {
     try {
@@ -29,7 +29,7 @@ const show: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * POST /queues/:queueId/members/shuffle
+ * POST /api/queues/:queueId/members/shuffle
  */
 const shuffleMembers: RequestHandler = async (request, response, next) => {
     try {
@@ -53,7 +53,7 @@ const shuffleMembers: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * POST /queues/:queueId/members/rotate
+ * POST /api/queues/:queueId/members/rotate
  */
 const rotateMembers: RequestHandler = async (request, response, next) => {
     try {
@@ -85,7 +85,7 @@ const rotateMembers: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * PUT /queues/:queueId/members/:userId
+ * PUT /api/queues/:queueId/members/:userId
  */
 const addMember: RequestHandler = async (request, response, next) => {
     try {
@@ -113,7 +113,7 @@ const addMember: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * PATCH /queues/:queueId/members/:userId
+ * PATCH /api/queues/:queueId/members/:userId
  */
 const setMemberStatus: RequestHandler = async (request, response, next) => {
     try {
@@ -143,7 +143,7 @@ const setMemberStatus: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * DELETE /queues/:queueId/members/:userId
+ * DELETE /api/queues/:queueId/members/:userId
  */
 const deleteMember: RequestHandler = async (request, response, next) => {
     try {

@@ -16,15 +16,20 @@ const handleError: ErrorRequestHandler = (error, request, response, next) => {
         console.error(error);
     }
     if (error instanceof ApplicationError) {
-        response.status(error.statusCode).json({
-            error: {
-                code: error.statusCode,
-                name: error.name,
-                message: error.message,
-            },
-        });
+        response.status(error.statusCode).json(error.jsonFriendly());
     } else {
-        response.status(response.statusCode || StatusCodes.INTERNAL_SERVER_ERROR).json({ error: error });
+        response.status(StatusCodes.INTERNAL_SERVER_ERROR);
+        if (error instanceof Error) {
+            response.json({
+                error: {
+                    code: response.statusCode,
+                    name: error.constructor.name,
+                    message: error.message,
+                },
+            });
+        } else {
+            response.json({ error: { code: response.statusCode, error: error } });
+        }
     }
 };
 

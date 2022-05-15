@@ -1,10 +1,10 @@
-import { RequestHandler } from "express";
 import mongoose from "mongoose";
+import { RequestHandler } from "express";
 
 import User from "../models/user.js";
 import { UserCausedError } from "../util/errors.js";
 
-// GET /users/?queueId=queueId
+// GET /api/users/?queueId=queueId
 const findInQueue: RequestHandler = async (request, response, next) => {
     try {
         const queueId = request.query.queueId as string;

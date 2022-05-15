@@ -12,6 +12,16 @@ export class ApplicationError extends Error {
     get statusCode(): number {
         return this._statusCode;
     }
+
+    public jsonFriendly() {
+        return {
+            error: {
+                code: this.statusCode,
+                name: this.name,
+                message: this.message,
+            },
+        };
+    }
 }
 
 export class AggregateError extends ApplicationError {
@@ -58,6 +68,16 @@ export class ResourceNotFoundError extends UserCausedError {
     constructor(message: string) {
         super(message);
         this._statusCode = StatusCodes.NOT_FOUND;
+    }
+}
+
+export class AuthenticationError extends UserCausedError {
+    private _cause: string;
+
+    constructor(message: string, cause?: string) {
+        super(message);
+        this._statusCode = StatusCodes.UNAUTHORIZED;
+        this._cause = cause;
     }
 }
 

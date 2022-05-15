@@ -1,8 +1,20 @@
 import { GridFSBucketReadStream, MongoRuntimeError, ObjectId } from "mongodb";
 import mongoose from "mongoose";
 
-import database from "../services/database.service.js";
+import { connection, gridFs } from "../services/database.service.js";
 import { UserCausedError } from "../util/errors.js";
+
+const fileTypePatternMap = new Map([
+    ["image", /image/],
+    ["video", /video/],
+    ["audio", /audio\//],
+    ["word", /(?:(?:ms-?)word)|(?:word(?:processing))/],
+    ["excel", /excel/],
+    ["openoffice", /open(?:office|doc)/],
+    ["pdf", /pdf/],
+    ["archive", /rar|[/b]zip|compress/],
+    ["general", /.*/],
+]);
 
 export interface IFile extends mongoose.Document {
     filename: string;
@@ -13,6 +25,7 @@ export interface IFile extends mongoose.Document {
 
     // Instance methods:
     openDownloadStream: () => Promise<GridFSBucketReadStream>;
+    fileType: () => string;
 }
 
 export interface IFileModel extends mongoose.Model<IFile> {
@@ -42,20 +55,22 @@ const fileSchema = new mongoose.Schema<IFile>(
             type: Number,
             required: true,
         },
-        uploadDate: {
-            type: Date,
-            required: true,
-        },
     },
     {
         collection: "archive.files",
         timestamps: { updatedAt: "uploadDate" },
+        versionKey: false,
     }
 );
 
 fileSchema.methods.openDownloadStream = async function (): Promise<GridFSBucketReadStream> {
-    const downloadStream = database.gridFs.bucket.openDownloadStream(new ObjectId(this._id));
+    const downloadStream = gridFs.bucket.openDownloadStream(new ObjectId(this._id));
     return downloadStream;
+};
+
+fileSchema.methods.fileType = function (): string {
+    const generalType = Array.from(fileTypePatternMap.keys()).find((fileType) => fileTypePatternMap.get(fileType).test(this.contentType));
+    return generalType ?? "general";
 };
 
 fileSchema.statics.findByIdAndProperDelete = async function (id: string): Promise<void> {
@@ -64,7 +79,7 @@ fileSchema.statics.findByIdAndProperDelete = async function (id: string): Promis
     }
 
     try {
-        await database.gridFs.bucket.delete(new ObjectId(id));
+        await gridFs.bucket.delete(new ObjectId(id));
     } catch (error) {
         if (!(error instanceof MongoRuntimeError)) {
             throw error;
@@ -72,6 +87,6 @@ fileSchema.statics.findByIdAndProperDelete = async function (id: string): Promis
     }
 };
 
-const File = database.connection.model<IFile, IFileModel>("File", fileSchema);
+const File = connection.model<IFile, IFileModel>("File", fileSchema);
 
 export default File;
