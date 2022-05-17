@@ -44,6 +44,8 @@ export const userSchema = new mongoose.Schema<IUser>(
         email: {
             type: String,
             required: true,
+            maxLength: 320,
+            unique: true,
         },
         password: {
             type: Buffer,

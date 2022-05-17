@@ -9,6 +9,7 @@ const config = [
     "USERS_COLLECTION_NAME",
     "QUEUES_COLLECTION_NAME",
     "ARCHIVE_COLLECTION_NAME",
+    "CORS_ORIGIN",
     "JWT_EXPIRE",
 
     // .private.env

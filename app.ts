@@ -1,6 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 import { initializedDatabase } from "./src/services/database.service.js";
 import authentication from "./src/services/authentication.service.js";
@@ -24,6 +25,13 @@ app.use(cookieParser("secret"));
 
 app.use(morgan("dev"));
 
+const corsOptions: cors.CorsOptions = {
+    methods: "GET, POST, OPTIONS, PUT, PATCH, DELETE",
+    credentials: true,
+    origin: new RegExp(process.env.CORS_ORIGIN),
+};
+app.use(cors(corsOptions));
+
 app.get("/", (request, response, next) => {
     response.status(200).send("Please stand by. I don't know what to do");
 });
@@ -31,11 +39,13 @@ app.get("/", (request, response, next) => {
 const apiRouter = express.Router();
 
 // Authentication:
-apiRouter.post("/register", authentication.register);
 apiRouter.post("/authenticate", authentication.authenticate);
+apiRouter.post("/logout", authentication.logout);
+apiRouter.post("/register", authentication.register);
 
 // User operations:
-apiRouter.get("/users", user.findInQueue);
+apiRouter.get("/users/in-queue/:queueId", user.findInQueue);
+apiRouter.get("/users/token", user.findByToken);
 
 // Queue operations:
 apiRouter.get("/queue/:queueId", queue.show);
