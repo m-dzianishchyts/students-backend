@@ -96,8 +96,17 @@ const register: RequestHandler = async (request, response, next) => {
     }
 };
 
+const authenticationGuard: RequestHandler = (request, response, next) => {
+    if (!request.signedCookies[tokenCookieName]) {
+        response.status(StatusCodes.UNAUTHORIZED).end();
+        return;
+    }
+    next();
+};
+
 export default {
     authenticate,
     logout,
     register,
+    authenticationGuard,
 };

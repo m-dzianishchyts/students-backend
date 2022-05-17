@@ -32,10 +32,6 @@ const corsOptions: cors.CorsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.get("/", (request, response, next) => {
-    response.status(200).send("Please stand by. I don't know what to do");
-});
-
 const apiRouter = express.Router();
 
 // Authentication:
@@ -44,22 +40,24 @@ apiRouter.post("/logout", authentication.logout);
 apiRouter.post("/register", authentication.register);
 
 // User operations:
-apiRouter.get("/users/in-queue/:queueId", user.findInQueue);
-apiRouter.get("/users/token", user.findByToken);
+apiRouter.get("/users/in-queue/:queueId", authentication.authenticationGuard, user.findInQueue);
+apiRouter.get("/users/token", authentication.authenticationGuard, user.findByToken);
 
 // Queue operations:
-apiRouter.get("/queue/:queueId", queue.show);
-apiRouter.post("/queue/:queueId/members/shuffle", queue.shuffleMembers);
-apiRouter.post("/queue/:queueId/members/rotate", queue.rotateMembers);
-apiRouter.put("/queue/:queueId/members/:userId", queue.addMember);
-apiRouter.patch("/queue/:queueId/members/:userId", queue.setMemberStatus);
-apiRouter.delete("/queue/:queueId/members/:userId", queue.deleteMember);
+apiRouter.get("/queue/:queueId", authentication.authenticationGuard, queue.show);
+apiRouter.post("/queue/:queueId/members/shuffle", authentication.authenticationGuard, queue.shuffleMembers);
+apiRouter.post("/queue/:queueId/members/rotate", authentication.authenticationGuard, queue.rotateMembers);
+apiRouter.put("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.addMember);
+apiRouter.patch("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.setMemberStatus);
+apiRouter.delete("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.deleteMember);
 
 // Archive operations:
-apiRouter.get("/files", archive.show);
-apiRouter.post("/files", archive.preUpload, archive.uploadFiles, archive.postUpload);
-apiRouter.get("/files/:id", archive.downloadFile);
-apiRouter.delete("/files/:id", archive.deleteFile);
+apiRouter.get("/files", authentication.authenticationGuard, archive.show);
+apiRouter.post("/files", authentication.authenticationGuard, archive.preUpload, archive.uploadFiles, archive.postUpload);
+apiRouter.get("/files/:id", authentication.authenticationGuard, archive.downloadFile);
+apiRouter.delete("/files/:id", authentication.authenticationGuard, archive.deleteFile);
+
+apiRouter.use("/", authentication.authenticationGuard);
 
 app.use("/api", apiRouter);
 
