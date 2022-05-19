@@ -1,10 +1,9 @@
-import multer from "multer";
+import multer, { MulterError } from "multer";
 import mongoose from "mongoose";
-import { RequestHandler, NextFunction } from "express";
-import { MulterError } from "multer";
+import { NextFunction, RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import File from "../models/file.js";
+import FileModel from "../models/file.js";
 import { gridFs } from "./database.service.js";
 import { ResourceNotFoundError, ServerError, UserCausedError } from "../util/errors.js";
 
@@ -16,7 +15,7 @@ const upload = multer({ storage: gridFs.storage }).array("files", filesUploadLim
  */
 const show: RequestHandler = async (request, response, next) => {
     try {
-        const files = await File.find({}).sort({ uploadDate: -1 }).exec();
+        const files = await FileModel.find({}).sort({ uploadDate: -1 }).exec();
         const filesWithType = files.map((file) => {
             const fileWithType = Object.assign({}, file.toObject());
             (fileWithType as any).fileType = file.fileType();
@@ -33,8 +32,8 @@ const show: RequestHandler = async (request, response, next) => {
  */
 const downloadFile: RequestHandler = async (request, response, next) => {
     try {
-        const id = request.params.id;
-        const file = await File.findById(id).exec();
+        const id = request.params.fileId;
+        const file = await FileModel.findById(id).exec();
         if (file === null) {
             next(new ResourceNotFoundError("File was not found"));
         }
@@ -86,8 +85,8 @@ const postUpload: RequestHandler = (request, response, next) => {
  */
 const deleteFile: RequestHandler = async (request, response, next) => {
     try {
-        const id = request.params.id;
-        await File.findByIdAndProperDelete(id);
+        const id = request.params.fileId;
+        await FileModel.properDeleteById(id);
         response.status(StatusCodes.NO_CONTENT).end();
     } catch (error) {
         response.status(StatusCodes.INTERNAL_SERVER_ERROR);

@@ -1,13 +1,13 @@
 import { StatusCodes } from "http-status-codes";
 
 export class ApplicationError extends Error {
-    protected _statusCode: number;
-
     constructor(message: string) {
         super(message);
         this._statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
         this.name = this.constructor.name;
     }
+
+    protected _statusCode: number;
 
     get statusCode(): number {
         return this._statusCode;
@@ -78,6 +78,15 @@ export class AuthenticationError extends UserCausedError {
         super(message);
         this._statusCode = StatusCodes.UNAUTHORIZED;
         this._cause = cause;
+    }
+}
+
+export class ForbiddenError extends UserCausedError {
+    private _cause: string;
+
+    constructor(message: string) {
+        super(message);
+        this._statusCode = StatusCodes.FORBIDDEN;
     }
 }
 

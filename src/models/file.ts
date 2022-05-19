@@ -8,7 +8,7 @@ const fileTypePatternMap = new Map([
     ["image", /image/],
     ["video", /video/],
     ["audio", /audio\//],
-    ["word", /(?:(?:ms-?)word)|(?:word(?:processing))/],
+    ["word", /ms-?word|wordprocessing/],
     ["excel", /excel/],
     ["openoffice", /open(?:office|doc)/],
     ["pdf", /pdf/],
@@ -16,7 +16,7 @@ const fileTypePatternMap = new Map([
     ["general", /.*/],
 ]);
 
-export interface IFile extends mongoose.Document {
+export interface File extends mongoose.Document {
     filename: string;
     contentType: string;
     length: number;
@@ -28,12 +28,12 @@ export interface IFile extends mongoose.Document {
     fileType: () => string;
 }
 
-export interface IFileModel extends mongoose.Model<IFile> {
+export interface FileModelRaw extends mongoose.Model<File> {
     // Static methods:
-    findByIdAndProperDelete: (id: string) => Promise<void>;
+    properDeleteById: (id: string) => Promise<void>;
 }
 
-const fileSchema = new mongoose.Schema<IFile>(
+const fileSchema = new mongoose.Schema<File>(
     {
         filename: {
             type: String,
@@ -60,8 +60,11 @@ const fileSchema = new mongoose.Schema<IFile>(
         collection: "archive.files",
         timestamps: { updatedAt: "uploadDate" },
         versionKey: false,
-    }
+    },
 );
+
+fileSchema.set("toObject", { virtuals: true, transform: (_doc, ret) => ret._id = undefined });
+fileSchema.set("toJSON", { virtuals: true, transform: (_doc, ret) => ret._id = undefined });
 
 fileSchema.methods.openDownloadStream = async function (): Promise<GridFSBucketReadStream> {
     const downloadStream = gridFs.bucket.openDownloadStream(new ObjectId(this._id));
@@ -73,7 +76,7 @@ fileSchema.methods.fileType = function (): string {
     return generalType ?? "general";
 };
 
-fileSchema.statics.findByIdAndProperDelete = async function (id: string): Promise<void> {
+fileSchema.statics.properDeleteById = async function (id: string): Promise<void> {
     if (!ObjectId.isValid(id)) {
         throw new UserCausedError("Invalid id");
     }
@@ -87,6 +90,6 @@ fileSchema.statics.findByIdAndProperDelete = async function (id: string): Promis
     }
 };
 
-const File = connection.model<IFile, IFileModel>("File", fileSchema);
+const FileModel = connection.model<File, FileModelRaw>("File", fileSchema);
 
-export default File;
+export default FileModel;

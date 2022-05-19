@@ -5,9 +5,10 @@ import cors from "cors";
 
 import { initializedDatabase } from "./src/services/database.service.js";
 import authentication from "./src/services/authentication.service.js";
+import user from "./src/services/user.service.js";
+import group from "./src/services/group.service.js";
 import queue from "./src/services/queue.service.js";
 import archive from "./src/services/archive.service.js";
-import user from "./src/services/user.service.js";
 import errorHandling from "./src/services/error-handling.service.js";
 
 await initializedDatabase;
@@ -40,24 +41,35 @@ apiRouter.post("/logout", authentication.logout);
 apiRouter.post("/register", authentication.register);
 
 // User operations:
-apiRouter.get("/users/in-queue/:queueId", authentication.authenticationGuard, user.findInQueue);
-apiRouter.get("/users/token", authentication.authenticationGuard, user.findByToken);
+apiRouter.get("/users/:userId/groups", authentication.authGuard, user.showGroups);
+apiRouter.get("/users/token", authentication.authGuard, user.findByToken);
+
+// Group operations:
+apiRouter.get("/groups/:groupId", authentication.membershipGuard, group.show);
+apiRouter.get("/groups/:groupId/members", authentication.membershipGuard, group.showUsers);
+apiRouter.get("/groups/:groupId/queues", authentication.creatorshipGuard, group.showQueues);
+apiRouter.post("/groups", authentication.authGuard, group.create);
+apiRouter.put("/groups/:groupId", authentication.creatorshipGuard, group.addMember);
+apiRouter.delete("/groups/:groupId/members/:userId", authentication.creatorshipGuard, group.deleteMember);
+apiRouter.post("/groups/:groupId/queues", authentication.creatorshipGuard, group.createQueue);
+apiRouter.delete("/groups/:groupId/queues/:queueId", authentication.creatorshipGuard, group.deleteQueue);
+apiRouter.delete("/groups/:groupId", authentication.creatorshipGuard, group.delete);
 
 // Queue operations:
-apiRouter.get("/queue/:queueId", authentication.authenticationGuard, queue.show);
-apiRouter.post("/queue/:queueId/members/shuffle", authentication.authenticationGuard, queue.shuffleMembers);
-apiRouter.post("/queue/:queueId/members/rotate", authentication.authenticationGuard, queue.rotateMembers);
-apiRouter.put("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.addMember);
-apiRouter.patch("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.setMemberStatus);
-apiRouter.delete("/queue/:queueId/members/:userId", authentication.authenticationGuard, queue.deleteMember);
+apiRouter.get("/queues/:queueId", authentication.membershipFromQueueGuard, queue.show);
+apiRouter.get("/queues/:queueId/members", authentication.membershipFromQueueGuard, queue.showUsers);
+apiRouter.get("/queues/:queueId/group", authentication.membershipFromQueueGuard, queue.showGroup);
+apiRouter.post("/queues/:queueId/members/shuffle", authentication.membershipFromQueueGuard, queue.shuffleMembers);
+apiRouter.post("/queues/:queueId/members/rotate", authentication.membershipFromQueueGuard, queue.rotateMembers);
+apiRouter.put("/queues/:queueId/members/:userId", authentication.membershipFromQueueGuard, queue.addMember);
+apiRouter.delete("/queues/:queueId/members/:userId", authentication.membershipFromQueueGuard, queue.deleteMember);
+apiRouter.patch("/queues/:queueId/members/:userId", authentication.creatorshipFromQueueOrPersonnelGuard, queue.setMemberStatus);
 
 // Archive operations:
-apiRouter.get("/files", authentication.authenticationGuard, archive.show);
-apiRouter.post("/files", authentication.authenticationGuard, archive.preUpload, archive.uploadFiles, archive.postUpload);
-apiRouter.get("/files/:id", authentication.authenticationGuard, archive.downloadFile);
-apiRouter.delete("/files/:id", authentication.authenticationGuard, archive.deleteFile);
-
-apiRouter.use("/", authentication.authenticationGuard);
+apiRouter.get("/files", authentication.authGuard, archive.show);
+apiRouter.post("/files", authentication.authGuard, archive.preUpload, archive.uploadFiles, archive.postUpload);
+apiRouter.get("/files/:fileId", authentication.authGuard, archive.downloadFile);
+apiRouter.delete("/files/:fileId", authentication.authGuard, archive.deleteFile);
 
 app.use("/api", apiRouter);
 

@@ -2,23 +2,71 @@ import mongoose from "mongoose";
 import shuffleArray from "shuffle-array";
 import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
-import { isBooleanable, boolean as toBoolean } from "boolean";
+import { boolean as toBoolean } from "boolean";
+import { body, param } from "express-validator";
 
-import Queue, { IQueueMember } from "../models/queue.js";
+import QueueModel, { QueueMember } from "../models/queue.js";
 import { ResourceNotFoundError, UserCausedError } from "../util/errors.js";
+import { identify } from "./authentication.service.js";
 
 /*
- * GET /api/queues/:id
+ * GET /api/queues/:queueId
  */
 const show: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const queue = await Queue.findById(queueId).exec();
+        const queueId = request.params[queueIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
         }
 
         response.json(queue);
+    } catch (error) {
+        if (error instanceof mongoose.Error.CastError) {
+            next(new UserCausedError(`Invalid id: ${error.value}`));
+        } else {
+            next(error);
+        }
+    }
+};
+
+/*
+ * GET /api/queues/:queueId/members
+ */
+const showUsers: RequestHandler = async (request, response, next) => {
+    try {
+        const queueId = request.params[queueIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
+        if (queue === null) {
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
+        }
+
+        const users = await queue.showUsers();
+        response.json(users);
+    } catch (error) {
+        if (error instanceof mongoose.Error.CastError) {
+            next(new UserCausedError(`Invalid id: ${error.value}`));
+        } else {
+            next(error);
+        }
+    }
+};
+
+/*
+ * GET /api/queues/:queueId/group
+ */
+const showGroup: RequestHandler = async (request, response, next) => {
+    try {
+        const queueId = request.params[queueIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
+        if (!queue) {
+            throw new ResourceNotFoundError("Queue was not found.");
+        }
+
+        const group = await queue.showGroup();
+        response.json(group);
     } catch (error) {
         if (error instanceof mongoose.Error.CastError) {
             next(new UserCausedError(`Invalid id: ${error.value}`));
@@ -33,10 +81,10 @@ const show: RequestHandler = async (request, response, next) => {
  */
 const shuffleMembers: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const queue = await Queue.findById(queueId).exec();
+        const queueId = request.params[queueIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
         }
 
         const shuffledMembers = shuffleArray(queue.members);
@@ -57,10 +105,11 @@ const shuffleMembers: RequestHandler = async (request, response, next) => {
  */
 const rotateMembers: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const queue = await Queue.findById(queueId).exec();
+        const queueId = request.params[queueIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
         }
 
         const nearestToggledIndex = findNearestToggledIndex(queue.members);
@@ -89,14 +138,15 @@ const rotateMembers: RequestHandler = async (request, response, next) => {
  */
 const addMember: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const userId = request.params.userId;
-        const queue = await Queue.findById(queueId).exec();
+        const queueId = request.params[queueIdParameter];
+        const userId = request.params[userIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
         }
 
-        const newQueueMember: any = await queue.insertMember(userId);
+        const newQueueMember: any = await queue.addMember(userId);
         if (newQueueMember !== null) {
             newQueueMember.userId = newQueueMember.userId.toString();
             response.status(StatusCodes.OK).json(newQueueMember);
@@ -117,21 +167,18 @@ const addMember: RequestHandler = async (request, response, next) => {
  */
 const setMemberStatus: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const userId = request.params.userId;
-        const status = request.query.status;
-        if (!isBooleanable(status)) {
-            throw new UserCausedError("Status is not boolean-like");
-        }
+        const queueId = request.params[queueIdParameter];
+        const userId = request.params[userIdParameter];
+        const status = toBoolean(request.body[statusParameter]);
 
-        const statusBoolean = Boolean(toBoolean(status));
-        const queue = await Queue.findById(queueId).exec();
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
         }
 
-        const member = { id: userId, status: statusBoolean };
-        await queue.updateMemberStatus(userId, statusBoolean);
+        const member = { id: userId, status: status };
+        await queue.updateMemberStatus(userId, status);
         response.json(member);
     } catch (error) {
         if (error instanceof mongoose.Error.CastError) {
@@ -147,11 +194,12 @@ const setMemberStatus: RequestHandler = async (request, response, next) => {
  */
 const deleteMember: RequestHandler = async (request, response, next) => {
     try {
-        const queueId = request.params.queueId;
-        const userId = request.params.userId;
-        const queue = await Queue.findById(queueId).exec();
+        const queueId = request.params[queueIdParameter];
+        const userId = request.params[userIdParameter];
+        const queue = await QueueModel.findById(queueId).exec();
         if (queue === null) {
-            throw new ResourceNotFoundError("Queue was not found");
+            next(new ResourceNotFoundError("Queue was not found"));
+            return;
         }
 
         await queue.deleteMember(userId);
@@ -165,7 +213,13 @@ const deleteMember: RequestHandler = async (request, response, next) => {
     }
 };
 
-function findNearestToggledIndex(members: IQueueMember[]) {
+const userFromToken: RequestHandler = async (request, _response, next) => {
+    const clientId = identify(request);
+    request.params[userIdParameter] = clientId;
+    next();
+};
+
+function findNearestToggledIndex(members: QueueMember[]) {
     return members.findIndex((member) => member.status);
 }
 
@@ -176,11 +230,46 @@ function arrayRotate(array: any[], magnitude: number) {
     return arrayRotated;
 }
 
+const queueIdParameter = "queueId";
+const userIdParameter = "userId";
+const statusParameter = "status";
+
 export default {
-    show,
-    shuffleMembers,
-    rotateMembers,
-    addMember,
-    setMemberStatus,
-    deleteMember,
+    show: [
+        param(queueIdParameter).isHexadecimal(),
+        show,
+    ],
+    showUsers: [
+        param(queueIdParameter).isHexadecimal(),
+        showUsers,
+    ],
+    showGroup: [
+        param(queueIdParameter).isHexadecimal(),
+        showGroup,
+    ],
+    shuffleMembers: [
+        param(queueIdParameter).isHexadecimal(),
+        shuffleMembers,
+    ],
+    rotateMembers: [
+        param(queueIdParameter).isHexadecimal(),
+        rotateMembers,
+    ],
+    addMember: [
+        param(queueIdParameter).isHexadecimal(),
+        param(userIdParameter).isHexadecimal(),
+        addMember,
+    ],
+    setMemberStatus: [
+        param(queueIdParameter).isHexadecimal(),
+        param(userIdParameter).isHexadecimal(),
+        body(statusParameter).isBoolean(),
+        setMemberStatus,
+    ],
+    deleteMember: [
+        param(queueIdParameter).isHexadecimal(),
+        param(userIdParameter).isHexadecimal(),
+        deleteMember,
+    ],
+    userFromToken,
 };
