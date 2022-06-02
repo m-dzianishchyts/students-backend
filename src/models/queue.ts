@@ -6,6 +6,15 @@ import GroupModel, { Group } from "./group.js";
 import { connection } from "../services/database.service.js";
 import { ResourceNotFoundError, ServerError, WriteResultNotAcknowledgedError } from "../util/errors.js";
 
+export interface PerspectiveQueue {
+    id: string;
+    name: string;
+    size?: number,
+    position?: number,
+    status?: boolean,
+    createdAt: Date;
+}
+
 export interface Queue extends mongoose.Document {
     name: string;
     members: QueueMember[];
@@ -13,11 +22,13 @@ export interface Queue extends mongoose.Document {
     // Instance methods:
     showUsers: () => Promise<(UserPojo & { status: boolean })[]>;
     showGroup: () => Promise<Group>;
+    showMember: (id: string) => Promise<QueueMember>;
     addMember: (id: string) => Promise<QueueMember>;
     deleteMember: (id: string) => Promise<void>;
     updateMembers: (members: QueueMember[]) => Promise<void>;
     updateMemberStatus: (id: string, status: boolean) => Promise<void>;
     updateName: (name: string) => Promise<void>;
+    toPerspectiveForm: (userId: string) => Promise<PerspectiveQueue>;
 }
 
 export interface QueueMember {
@@ -81,10 +92,6 @@ queueSchema.methods.updateName = async function (name: string): Promise<void> {
 
 queueSchema.methods.showUsers = async function (): Promise<(UserPojo & { status: boolean })[]> {
     const queue = await QueueModel.findById(this._id).select("members").lean().exec();
-    if (!queue) {
-        throw new ResourceNotFoundError("Queue was not found");
-    }
-
     const queueMembersIds = queue.members.map((member) => member.userId);
     const memberStatusMap = new Map(queue.members.map((member) => [member.userId.toString(), member.status]));
     const userFilter = { _id: { $in: queueMembersIds } };
@@ -110,6 +117,16 @@ queueSchema.methods.showGroup = async function (): Promise<Group> {
     }
 
     return group;
+};
+
+queueSchema.methods.showMember = async function (id: string): Promise<QueueMember> {
+    const filter = { _id: this._id, "members.userId": id };
+    const projection = { members: {$elemMatch: { userId: id } }};
+    const result = await QueueModel.findOne(filter, projection).lean().exec();
+    if (result.members.length === 0) {
+        throw new ResourceNotFoundError("Queue member was not found");
+    }
+    return result.members[0];
 };
 
 queueSchema.methods.addMember = async function (id: string): Promise<QueueMember> {
@@ -163,6 +180,27 @@ queueSchema.methods.updateMemberStatus = async function (id: string, status: boo
     if (result.matchedCount === 0) {
         throw new ResourceNotFoundError("Member was not found in the queue");
     }
+};
+
+queueSchema.methods.toPerspectiveForm = async function (userId: string): Promise<PerspectiveQueue> {
+    const queue = await QueueModel.findById(this._id).exec();
+    const perspectiveInfo: { size: number, position: number, status: boolean } = {
+        size: queue.members.length,
+        position: undefined,
+        status: undefined,
+    };
+    let position = 1;
+    for (const member of queue.members) {
+        if (member.userId.equals(userId)) {
+            perspectiveInfo.position = position;
+            perspectiveInfo.status = member.status;
+            break;
+        }
+        position++;
+    }
+    const objectQueue = queue.toObject();
+    delete objectQueue.members;
+    return { ...objectQueue, ...perspectiveInfo } as unknown as PerspectiveQueue;
 };
 
 const QueueModel = connection.model<Queue>("Queue", queueSchema);

@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 
 import UserModel, { User } from "./user.js";
-import QueueModel, { Queue } from "./queue.js";
+import QueueModel, { PerspectiveQueue, Queue } from "./queue.js";
 import { connection } from "../services/database.service.js";
 import { ResourceNotFoundError, UserCausedError, WriteResultNotAcknowledgedError } from "../util/errors.js";
 
@@ -15,12 +15,14 @@ export interface Group extends mongoose.Document {
 
     // Instance methods:
     showUsers: () => Promise<User[]>;
-    showQueues: () => Promise<Queue[]>;
+    showQueuesPerspective: (userId: string) => Promise<Queue[]>;
     updateName: (name: string) => Promise<void>;
-    addMember: (userId: string | ObjectId) => Promise<void>;
+    addMemberWithId: (userId: string | ObjectId) => Promise<void>;
+    addMemberWithEmail: (email: string) => Promise<void>;
     deleteMember: (userId: string) => Promise<void>;
     createQueue: (name: string) => Promise<Queue>;
     deleteQueue: (id: string) => Promise<void>;
+    deleteProperly: () => Promise<void>;
 }
 
 export interface GroupInitial {
@@ -30,7 +32,7 @@ export interface GroupInitial {
 
 interface GroupModelRaw extends mongoose.Model<Group> {
     // Static methods:
-    createFromInitial: (initial: GroupInitial) => Promise<User>;
+    createFromInitial: (initial: GroupInitial) => Promise<Group>;
     deleteById: (id: string) => Promise<void>;
 }
 
@@ -91,13 +93,15 @@ groupSchema.methods.showUsers = async function (): Promise<User[]> {
     return users;
 };
 
-groupSchema.methods.showQueues = async function (): Promise<Queue[]> {
+groupSchema.methods.showQueuesPerspective = async function (userId: string): Promise<PerspectiveQueue[]> {
     const filter = { _id: this._id };
     const group = await GroupModel.findOne(filter).select("queues").lean().exec();
 
     const queueFilter = { _id: { $in: group.queues } };
     const queues = await QueueModel.find(queueFilter).exec();
-    return queues;
+
+    const resultQueues = await Promise.all(queues.map(queue => queue.toPerspectiveForm(userId)));
+    return resultQueues;
 };
 
 groupSchema.methods.updateName = async function (name: string): Promise<void> {
@@ -109,7 +113,7 @@ groupSchema.methods.updateName = async function (name: string): Promise<void> {
     }
 };
 
-groupSchema.methods.addMember = async function (userId: string | ObjectId): Promise<void> {
+groupSchema.methods.addMemberWithId = async function (userId: string | ObjectId): Promise<void> {
     const userObjectId = new ObjectId(userId);
     const userFilter = { _id: userObjectId };
     const userExists = await UserModel.exists(userFilter).exec();
@@ -142,8 +146,41 @@ groupSchema.methods.addMember = async function (userId: string | ObjectId): Prom
     }
 };
 
+groupSchema.methods.addMemberWithEmail = async function (email: string): Promise<void> {
+    const userFilter = { email: email };
+    const user = await UserModel.findOne(userFilter).lean().exec();
+    if (!user) {
+        throw new ResourceNotFoundError("User was not found");
+    }
+
+    const session = await connection.startSession();
+    try {
+        session.startTransaction();
+        const userUpdate = { $push: { groups: this._id } };
+        const userResult = await UserModel.updateOne(userFilter, userUpdate).exec();
+        if (!userResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
+
+        const groupFilter = { _id: this._id };
+        const groupUpdate = { $push: { members: user._id } };
+        const groupResult = await GroupModel.updateOne(groupFilter, groupUpdate).exec();
+        if (!groupResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
+
+        await session.commitTransaction();
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
+};
+
 groupSchema.methods.deleteMember = async function (userId: string): Promise<void> {
     const userObjectId = new ObjectId(userId);
+    const group = await GroupModel.findById(this._id).lean().exec();
 
     const session = await connection.startSession();
     try {
@@ -162,6 +199,12 @@ groupSchema.methods.deleteMember = async function (userId: string): Promise<void
             throw new WriteResultNotAcknowledgedError();
         }
 
+        const queueFilter = { _id: { $in: group.queues } };
+        const queueUpdate = { $pull: { members: { userId: userObjectId } } };
+        const queueResult = await QueueModel.updateOne(queueFilter, queueUpdate).exec();
+        if (!queueResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
         await session.commitTransaction();
     } catch (error) {
         await session.abortTransaction();
@@ -228,6 +271,39 @@ groupSchema.methods.deleteQueue = async function (queueId: string): Promise<void
     }
 };
 
+groupSchema.methods.deleteProperly = async function (): Promise<void> {
+    const session = await connection.startSession();
+    try {
+        session.startTransaction();
+
+        const queueFilter = { _id: {$in: this.queues } };
+        const queueDeleteResult = await QueueModel.deleteMany(queueFilter).exec();
+        if (!queueDeleteResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
+
+        const userFilter = { _id: this.members };
+        const userUpdate = { $pull: { groups: this._id } };
+        const updateResult = await UserModel.updateOne(userFilter, userUpdate).exec();
+        if (!updateResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
+
+        const groupFilter = {_id: this._id};
+        const groupDeleteResult = await GroupModel.deleteOne(groupFilter).exec();
+        if (!groupDeleteResult.acknowledged) {
+            throw new WriteResultNotAcknowledgedError();
+        }
+
+        await session.commitTransaction();
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        await session.endSession();
+    }
+};
+
 groupSchema.statics.createFromInitial = async (initial: GroupInitial): Promise<Group> => {
     initial.creator = new ObjectId(initial.creator);
     const userFilter = { _id: initial.creator };
@@ -240,35 +316,8 @@ groupSchema.statics.createFromInitial = async (initial: GroupInitial): Promise<G
     try {
         session.startTransaction();
         const group = await GroupModel.create(initial);
-        await group.addMember(group.creator);
+        await group.addMemberWithId(group.creator);
         return group;
-    } catch (error) {
-        await session.abortTransaction();
-        throw error;
-    } finally {
-        await session.endSession();
-    }
-};
-
-groupSchema.statics.deleteById = async (id: string): Promise<void> => {
-    const groupObjectId = new ObjectId(id);
-    const session = await connection.startSession();
-    try {
-        session.startTransaction();
-        const groupFilter = { _id: groupObjectId };
-        const groupResult = await GroupModel.deleteOne(groupFilter).exec();
-        if (!groupResult.acknowledged) {
-            throw new WriteResultNotAcknowledgedError();
-        }
-
-        const userFilter = {};
-        const userUpdate = { $pull: { groups: groupObjectId } };
-        const userResult = await UserModel.updateMany(userFilter, userUpdate).exec();
-        if (!userResult.acknowledged) {
-            throw new WriteResultNotAcknowledgedError();
-        }
-
-        await session.commitTransaction();
     } catch (error) {
         await session.abortTransaction();
         throw error;

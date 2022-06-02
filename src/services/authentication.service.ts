@@ -143,7 +143,7 @@ const membershipFromQueueGuard: RequestHandler = async (request, _response, next
             return;
         }
 
-        const groupFilter = { queues: { $eq: new ObjectId(queueId) }};
+        const groupFilter = { queues: { $eq: new ObjectId(queueId) } };
         const group = await GroupModel.findOne(groupFilter).lean().exec();
         if (!group) {
             next(new ServerError("Queue does not belong to any group."));
@@ -175,6 +175,27 @@ const creatorshipGuard: RequestHandler = async (request, _response, next) => {
             return;
         }
         next();
+    } catch (error) {
+        next(error);
+    }
+};
+
+const creatorshipFromQueueGuard: RequestHandler = async (request, _response, next) => {
+    try {
+        const queueId = request.params["queueId"];
+        const clientId = identify(request);
+
+        const groupFilter = { queues: { $eq: new ObjectId(queueId) } };
+        const group = await GroupModel.findOne(groupFilter).lean().exec();
+        if (!group) {
+            next(new ResourceNotFoundError("Group was not found."));
+        }
+
+        if (group.creator.equals(clientId)) {
+            next();
+        } else {
+            next(new ForbiddenError("Your are not a creator of this queue group."));
+        }
     } catch (error) {
         next(error);
     }
@@ -237,5 +258,6 @@ export default {
     membershipGuard: [authGuard, membershipGuard],
     membershipFromQueueGuard: [authGuard, membershipFromQueueGuard],
     creatorshipGuard: [authGuard, creatorshipGuard],
+    creatorshipFromQueueGuard: [authGuard, creatorshipFromQueueGuard],
     creatorshipFromQueueOrPersonnelGuard: [authGuard, creatorshipFromQueueOrPersonnelGuard],
 };

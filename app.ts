@@ -47,9 +47,10 @@ apiRouter.get("/users/token", authentication.authGuard, user.findByToken);
 // Group operations:
 apiRouter.get("/groups/:groupId", authentication.membershipGuard, group.show);
 apiRouter.get("/groups/:groupId/members", authentication.membershipGuard, group.showUsers);
-apiRouter.get("/groups/:groupId/queues", authentication.creatorshipGuard, group.showQueues);
+apiRouter.get("/groups/:groupId/queues/perspective/:userId", authentication.creatorshipGuard, group.showQueuesPerspective);
 apiRouter.post("/groups", authentication.authGuard, group.create);
-apiRouter.put("/groups/:groupId", authentication.creatorshipGuard, group.addMember);
+apiRouter.put("/groups/:groupId/members/email", authentication.creatorshipGuard, group.addMemberWithEmail);
+apiRouter.put("/groups/:groupId/members/:userId", authentication.creatorshipGuard, group.addMemberWithId);
 apiRouter.delete("/groups/:groupId/members/:userId", authentication.creatorshipGuard, group.deleteMember);
 apiRouter.post("/groups/:groupId/queues", authentication.creatorshipGuard, group.createQueue);
 apiRouter.delete("/groups/:groupId/queues/:queueId", authentication.creatorshipGuard, group.deleteQueue);
@@ -57,10 +58,12 @@ apiRouter.delete("/groups/:groupId", authentication.creatorshipGuard, group.dele
 
 // Queue operations:
 apiRouter.get("/queues/:queueId", authentication.membershipFromQueueGuard, queue.show);
+apiRouter.get("/queues/:queueId/perspective/:userId", authentication.membershipFromQueueGuard, queue.showPerspectiveSummary);
 apiRouter.get("/queues/:queueId/members", authentication.membershipFromQueueGuard, queue.showUsers);
 apiRouter.get("/queues/:queueId/group", authentication.membershipFromQueueGuard, queue.showGroup);
-apiRouter.post("/queues/:queueId/members/shuffle", authentication.membershipFromQueueGuard, queue.shuffleMembers);
-apiRouter.post("/queues/:queueId/members/rotate", authentication.membershipFromQueueGuard, queue.rotateMembers);
+apiRouter.post("/queues/:queueId/shuffle", authentication.membershipFromQueueGuard, queue.shuffleMembers);
+apiRouter.post("/queues/:queueId/rotate", authentication.membershipFromQueueGuard, queue.rotateMembers);
+apiRouter.get("/queues/:queueId/members/:userId", authentication.membershipFromQueueGuard, queue.getMember);
 apiRouter.put("/queues/:queueId/members/:userId", authentication.membershipFromQueueGuard, queue.addMember);
 apiRouter.delete("/queues/:queueId/members/:userId", authentication.membershipFromQueueGuard, queue.deleteMember);
 apiRouter.patch("/queues/:queueId/members/:userId", authentication.creatorshipFromQueueOrPersonnelGuard, queue.setMemberStatus);

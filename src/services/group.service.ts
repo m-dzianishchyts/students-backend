@@ -39,7 +39,6 @@ const showUsers: RequestHandler = async (request, response, next) => {
             next(new ResourceNotFoundError("Group was not found."));
             return;
         }
-
         const users = await group.showUsers();
         response.json(users);
     } catch (error) {
@@ -52,18 +51,20 @@ const showUsers: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * GET /api/groups/:groupId/queues
+ * GET /api/groups/:groupId/queues/perspective/:userId
  */
-const showQueues: RequestHandler = async (request, response, next) => {
+const showQueuesPerspective: RequestHandler = async (request, response, next) => {
     try {
-        const id = request.params[groupIdParameter];
-        const group = await GroupModel.findById(id).exec();
+        const groupId = request.params[groupIdParameter];
+        const userId = request.params[userIdParameter];
+
+        const group = await GroupModel.findById(groupId).exec();
         if (!group) {
             next(new ResourceNotFoundError("Group was not found."));
             return;
         }
 
-        const queues = await group.showQueues();
+        const queues = await group.showQueuesPerspective(userId);
         response.json(queues);
     } catch (error) {
         if (error instanceof mongoose.Error.CastError) {
@@ -96,19 +97,43 @@ const create: RequestHandler = async (request, response, next) => {
 };
 
 /*
- * PUT /api/groups/:groupId/members
+ * PUT /api/groups/:groupId/members/:userId
  */
-const addMember: RequestHandler = async (request, response, next) => {
+const addMemberWithId: RequestHandler = async (request, response, next) => {
     try {
         const groupId = request.params[groupIdParameter];
-        const memberId = request.body[userIdParameter];
+        const userId = request.params[userIdParameter];
         const group = await GroupModel.findById(groupId).exec();
         if (!group) {
             next(new ResourceNotFoundError("Group was not found."));
             return;
         }
 
-        await group.addMember(memberId);
+        await group.addMemberWithId(userId);
+        response.status(StatusCodes.NO_CONTENT).end();
+    } catch (error) {
+        if (error instanceof mongoose.Error.CastError) {
+            next(new UserCausedError(`Invalid id: ${error.value}`));
+        } else {
+            next(error);
+        }
+    }
+};
+
+/*
+ * PUT /api/groups/:groupId/members/email
+ */
+const addMemberWithEmail: RequestHandler = async (request, response, next) => {
+    try {
+        const groupId = request.params[groupIdParameter];
+        const userEmail = request.body["email"];
+        const group = await GroupModel.findById(groupId).exec();
+        if (!group) {
+            next(new ResourceNotFoundError("Group was not found."));
+            return;
+        }
+
+        await group.addMemberWithEmail(userEmail);
         response.status(StatusCodes.NO_CONTENT).end();
     } catch (error) {
         if (error instanceof mongoose.Error.CastError) {
@@ -149,7 +174,13 @@ const deleteMember: RequestHandler = async (request, response, next) => {
 const deleteGroup: RequestHandler = async (request, response, next) => {
     const groupId = request.params[groupIdParameter];
     try {
-        await GroupModel.deleteById(groupId);
+        const group = await GroupModel.findById(groupId).exec();
+        if (!group) {
+            next(new ResourceNotFoundError("Group was not found."));
+            return;
+        }
+
+        await group.deleteProperly();
         response.status(StatusCodes.NO_CONTENT).end();
     } catch (error) {
         if (error instanceof mongoose.Error.CastError) {
@@ -222,17 +253,24 @@ export default {
         param(groupIdParameter).isHexadecimal(),
         showUsers,
     ],
-    showQueues: [
+    showQueuesPerspective: [
         param(groupIdParameter).isHexadecimal(),
-        showQueues,
+        param(userIdParameter).isHexadecimal(),
+        showQueuesPerspective,
     ],
     create: [
         body(nameParameter).trim().isLength({ min: 1, max: 255 }),
         create,
     ],
-    addMember: [
+    addMemberWithId: [
         param(groupIdParameter).isHexadecimal(),
-        addMember,
+        param(userIdParameter).isHexadecimal(),
+        addMemberWithId,
+    ],
+    addMemberWithEmail: [
+        param(groupIdParameter).isHexadecimal(),
+        body("email").isEmail(),
+        addMemberWithEmail,
     ],
     deleteMember: [
         param(groupIdParameter).isHexadecimal(),

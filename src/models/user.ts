@@ -7,8 +7,13 @@ import Queue from "./queue.js";
 import { connection } from "../services/database.service.js";
 import { ResourceNotFoundError, WriteResultNotAcknowledgedError } from "../util/errors.js";
 
+export interface UserName {
+    first: string,
+    last: string
+}
+
 export interface UserPojo {
-    name: { first: string; last: string };
+    name: UserName;
     email: string;
     password: Buffer;
     groups: ObjectId[];
@@ -24,7 +29,7 @@ export interface User extends mongoose.Document, UserPojo {
 }
 
 export interface UserInitial {
-    name: { first: string; last: string };
+    name: UserName;
     email: string;
     password: string | Buffer;
 }
@@ -34,7 +39,7 @@ export interface UserModelRaw extends mongoose.Model<User> {
     createFromInitial: (initial: UserInitial) => Promise<User>;
 }
 
-export const userNameSchema = new mongoose.Schema<{ first: string; last: string }>(
+export const userNameSchema = new mongoose.Schema<UserName>(
     {
         first: {
             type: String,
