@@ -284,7 +284,7 @@ groupSchema.methods.deleteProperly = async function (): Promise<void> {
 
         const userFilter = { _id: this.members };
         const userUpdate = { $pull: { groups: this._id } };
-        const updateResult = await UserModel.updateOne(userFilter, userUpdate).exec();
+        const updateResult = await UserModel.updateMany(userFilter, userUpdate).exec();
         if (!updateResult.acknowledged) {
             throw new WriteResultNotAcknowledgedError();
         }
