@@ -47,7 +47,7 @@ apiRouter.get("/users/token", authentication.authGuard, user.findByToken);
 // Group operations:
 apiRouter.get("/groups/:groupId", authentication.membershipGuard, group.show);
 apiRouter.get("/groups/:groupId/members", authentication.membershipGuard, group.showUsers);
-apiRouter.get("/groups/:groupId/queues/perspective/:userId", authentication.creatorshipGuard, group.showQueuesPerspective);
+apiRouter.get("/groups/:groupId/queues/perspective/:userId", authentication.membershipGuard, group.showQueuesPerspective);
 apiRouter.post("/groups", authentication.authGuard, group.create);
 apiRouter.put("/groups/:groupId/members/email", authentication.creatorshipGuard, group.addMemberWithEmail);
 apiRouter.put("/groups/:groupId/members/:userId", authentication.creatorshipGuard, group.addMemberWithId);
